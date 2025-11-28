@@ -1,4 +1,5 @@
 import requests
+import logging
 
 from ...utils.retry import execute_with_retry
 from ...utils.batch import read_items_in_batches
@@ -27,7 +28,8 @@ class JiraDocumentReader:
         self.number_of_retries = number_of_retries
         self.retry_delay = retry_delay
         self.max_skipped_items_in_row = max_skipped_items_in_row
-        self.fields = "summary,description,comment,updated"
+        self.fields = "summary,description,comment,updated,status,created,sprint,parent,epicLink,issuelinks"
+        self.expand = "changelog"
 
     def read_all_documents(self):
         return self.__read_items()
@@ -36,7 +38,9 @@ class JiraDocumentReader:
         search_result = self.__request_items({
             'jql': self.query, 
             "startAt": 0, 
-            "maxResults": 1
+            "maxResults": 1,
+            "fields": self.fields,
+            "expand": self.expand,
         })
 
         return search_result['total']
@@ -48,6 +52,7 @@ class JiraDocumentReader:
             "query": self.query,
             "batchSize": self.batch_size,
             "fields": self.fields,
+            "expand": self.expand,
         }
 
     def __add_url_prefix(self, relative_path):
@@ -59,6 +64,7 @@ class JiraDocumentReader:
             "startAt": start_at, 
             "maxResults": batch_size,
             "fields": self.fields,
+            "expand": self.expand,
         })
 
         return read_items_in_batches(read_batch_func,
@@ -78,6 +84,21 @@ class JiraDocumentReader:
                                     }, 
                                     params=params, 
                                     auth=((self.login, self.password) if self.login and self.password else None))
+            
+            # Log error response details before raising
+            if not response.ok:
+                error_details = {
+                    "status_code": response.status_code,
+                    "url": response.url,
+                    "params": params
+                }
+                try:
+                    error_details["response_body"] = response.json()
+                except (ValueError, requests.exceptions.JSONDecodeError):
+                    error_details["response_text"] = response.text
+                
+                logging.error(f"JIRA API error: {error_details}")
+            
             response.raise_for_status()
             return response.json()
 
