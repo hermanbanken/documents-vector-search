@@ -34,7 +34,8 @@ def __create_collection_updater(collection_name):
 
     document_reader, document_converter = __create_reader_and_converter(manifest)
 
-    document_indexers = [load_indexer(indexer["name"], collection_name, disk_persister) for indexer in manifest['indexers']]
+    # Load indexers in writable mode (not memory-mapped) since updates need to modify them
+    document_indexers = [load_indexer(indexer["name"], collection_name, disk_persister, read_only=False) for indexer in manifest['indexers']]
 
     return DocumentCollectionCreator(collection_name=collection_name,
                                      document_reader=document_reader, 

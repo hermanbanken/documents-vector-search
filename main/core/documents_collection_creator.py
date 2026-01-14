@@ -174,7 +174,13 @@ class DocumentCollectionCreator:
                 indexer.index_texts(index_item_ids, items_to_index)
 
         for indexer in self.document_indexers:
+            # Save serialized index for backward compatibility
             self.persister.save_bin_file(indexer.serialize(), f"{self.__build_index_base_path(indexer)}/indexer")
+            # Also save in FAISS format for memory-mapped loading (more memory efficient)
+            import os
+            index_file_path = os.path.join(self.persister.base_path, f"{self.__build_index_base_path(indexer)}/indexer.faiss")
+            os.makedirs(os.path.dirname(index_file_path), exist_ok=True)
+            indexer.save_to_file(index_file_path)
 
         index_info = { "lastIndexItemId": last_index_item_id, }
         self.__save_json_file(index_info, self.__build_index_info_path())
