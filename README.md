@@ -51,9 +51,9 @@ You can create different collections for different use cases. For example, you c
 
 ### Create collection for Confluence:
 
-1) Set env variables needed for authentification/authorization:
+1) Set up authentification/authorization:
 - **For Confluence Server/Data Center:** set CONF_TOKEN env variable with your Confluence Bearer token (optionally, you can set CONF_LOGIN and CONF_PASSWORD env variables instead with your Confluence user login and password, but the token variant is more recommended).
-- **For Confluence Cloud:** set ATLASSIAN_EMAIL env variable with your Atlassian account email and ATLASSIAN_TOKEN env variable with your Atlassian Cloud API token. (Generate API token at: https://id.atlassian.com/manage/api-tokens)
+- **For Confluence Cloud:** Ensure that `acli` (Atlassian CLI) is installed and configured with proper authentication. The tool uses `acli` for robust authentication handling. Install `acli` and configure it before running the collection creation script.
 
 2) Run command like:
 ```
@@ -72,9 +72,9 @@ Notes:
 
 ### Create collection for Jira:
 
-1) Set env variables needed for authentification/authorization:
+1) Set up authentification/authorization:
 - **For Jira Server/Data Center:** set JIRA_TOKEN env variable with your Jira Bearer token (optionally, you can set JIRA_LOGIN and JIRA_PASSWORD env variables instead with your Jira user login and password, but the token variant is more recommended).
-- **For Jira Cloud:** set ATLASSIAN_EMAIL env variable with your Atlassian account email and ATLASSIAN_TOKEN env variable with your Atlassian Cloud API token. (Generate API token at: https://id.atlassian.com/manage/api-tokens)
+- **For Jira Cloud:** Ensure that `acli` (Atlassian CLI) is installed and configured with proper authentication. The tool uses `acli` for robust authentication handling. Install `acli` and configure it before running the collection creation script.
 
 2) Run command like:
 ```
@@ -109,11 +109,11 @@ Notes:
 
 ### Update existing collection:
 
-1) Set env variables needed for authentification/authorization (not needed for local files):
+1) Set up authentification/authorization (not needed for local files):
 - **For Confluence Server/Data Center:** set CONF_TOKEN env variable with your Confluence Bearer token (optionally, you can set CONF_LOGIN and CONF_PASSWORD env variables instead with your Confluence user login and password, but the token variant is more recommended).
-- **For Confluence Cloud:** set ATLASSIAN_EMAIL env variable with your Atlassian account email and ATLASSIAN_TOKEN env variable with your Atlassian Cloud API token. (Generate API token at: https://id.atlassian.com/manage/api-tokens)
+- **For Confluence Cloud:** Ensure that `acli` (Atlassian CLI) is installed and configured with proper authentication. The tool uses `acli` for robust authentication handling.
 - **For Jira Server/Data Center:** set JIRA_TOKEN env variable with your Jira Bearer token (optionally, you can set JIRA_LOGIN and JIRA_PASSWORD env variables instead with your Jira user login and password, but the token variant is more recommended).
-- **For Jira Cloud:** set ATLASSIAN_EMAIL env variable with your Atlassian account email and ATLASSIAN_TOKEN env variable with your Atlassian Cloud API token. (Generate API token at: https://id.atlassian.com/manage/api-tokens)
+- **For Jira Cloud:** Ensure that `acli` (Atlassian CLI) is installed and configured with proper authentication. The tool uses `acli` for robust authentication handling.
 
 2) Run command like:
 ```

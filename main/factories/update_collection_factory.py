@@ -90,19 +90,13 @@ def __create_jira_reader_and_converter(manifest):
     return reader,converter
 
 def __create_jira_cloud_reader_and_converter(manifest):
-    email = os.environ.get('ATLASSIAN_EMAIL')
-    api_token = os.environ.get('ATLASSIAN_TOKEN')
-
-    if not email or not api_token:
-        raise ValueError("Both 'ATLASSIAN_EMAIL' and 'ATLASSIAN_TOKEN' environment variables must be provided for Jira Cloud.")
-
+    # Jira Cloud - uses acli for authentication (no need for email/token here)
+    # Ensure acli is configured with proper authentication before running
     update_date = __calculate_update_date(manifest).isoformat()
     query_addition = f'AND (created >= "{update_date}" OR updated >= "{update_date}")'
 
     reader = JiraCloudDocumentReader(base_url=manifest['reader']['baseUrl'], 
                                     query=f"{manifest['reader']['query']} {query_addition}",
-                                    email=email,
-                                    api_token=api_token, 
                                     batch_size=manifest['reader']['batchSize'])
     converter = JiraCloudDocumentConverter()
     return reader,converter
@@ -129,19 +123,13 @@ def __create_confluence_reader_and_converter(manifest):
     return reader,converter
 
 def __create_confluence_cloud_reader_and_converter(manifest):
-    email = os.environ.get('ATLASSIAN_EMAIL')
-    api_token = os.environ.get('ATLASSIAN_TOKEN')
-
-    if not email or not api_token:
-        raise ValueError("Both 'ATLASSIAN_EMAIL' and 'ATLASSIAN_TOKEN' environment variables must be provided for Confluence Cloud.")
-
+    # Confluence Cloud - uses acli for authentication (no need for email/token here)
+    # Ensure acli is configured with proper authentication before running
     update_date = __calculate_update_date(manifest).isoformat()
     query_addition = f'AND (created >= "{update_date}" OR lastModified >= "{update_date}")'
 
     reader = ConfluenceCloudDocumentReader(base_url=manifest['reader']['baseUrl'], 
                                           query=f"{manifest['reader']['query']} {query_addition}",
-                                          email=email,
-                                          api_token=api_token, 
                                           batch_size=manifest['reader']['batchSize'],
                                           read_all_comments=manifest['reader']['readAllComments'],)
     converter = ConfluenceCloudDocumentConverter()

@@ -23,17 +23,10 @@ args = vars(ap.parse_args())
 is_cloud = args['url'].endswith('.atlassian.net')
 
 if is_cloud:
-    # Jira Cloud authentication
-    email = os.environ.get('ATLASSIAN_EMAIL')
-    api_token = os.environ.get('ATLASSIAN_TOKEN')
-    
-    if not email or not api_token:
-        raise ValueError("Both 'ATLASSIAN_EMAIL' and 'ATLASSIAN_TOKEN' environment variables must be provided for Jira Cloud.")
-    
+    # Jira Cloud - uses acli for authentication (no need for email/token here)
+    # Ensure acli is configured with proper authentication before running
     jira_document_reader = JiraCloudDocumentReader(base_url=args['url'],
-                                                   query=args['jql'],
-                                                   email=email,
-                                                   api_token=api_token)
+                                                   query=args['jql'])
     
     jira_document_converter = JiraCloudDocumentConverter()
     

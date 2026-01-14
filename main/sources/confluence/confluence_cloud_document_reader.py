@@ -1,6 +1,7 @@
-import requests
+import subprocess
 import json
 import urllib.parse
+import logging
 
 from ...utils.retry import execute_with_retry
 from ...utils.batch import read_items_in_batches
@@ -9,25 +10,17 @@ class ConfluenceCloudDocumentReader:
     def __init__(self, 
                  base_url, 
                  query,
-                 email=None,
-                 api_token=None,
                  batch_size=50, 
                  number_of_retries=3, 
                  retry_delay=1, 
                  max_skipped_items_in_row=5,
                  read_all_comments=False):
-        # "email" and "api_token" must be provided for Cloud
-        if not email or not api_token:
-            raise ValueError("Both 'email' and 'api_token' must be provided for Confluence Cloud.")
-
         # Ensure base_url has the correct Cloud format
         if not base_url.endswith('.atlassian.net'):
             raise ValueError("Base URL must be a Confluence Cloud URL (ending with .atlassian.net)")
         
         self.base_url = base_url
         self.query = ConfluenceCloudDocumentReader.build_page_query(query)
-        self.email = email
-        self.api_token = api_token
         self.batch_size = batch_size
         # Confluence has hierarchical comments, we can read first level by adding "children.comment.body.storage" to "expand" parameter
         # but to read all comments we need to make additional request with "depth=all" parameter
@@ -121,16 +114,84 @@ class ConfluenceCloudDocumentReader:
 
     def __request(self, url, params):
         def do_request():
-            response = requests.get(url=url, 
-                                    headers={
-                                        "Accept": "application/json",
-                                        "Content-Type": "application/json"
-                                    }, 
-                                    params=params, 
-                                    auth=(self.email, self.api_token))
-            response.raise_for_status()
-
-            return response.json()
+            # Use acli to execute Confluence API calls
+            # acli handles authentication automatically
+            
+            # Extract domain from base_url (e.g., "your-domain" from "https://your-domain.atlassian.net")
+            domain = self.base_url.replace('https://', '').replace('.atlassian.net', '')
+            
+            # Determine the API endpoint from the URL
+            if '/wiki/rest/api/search' in url:
+                # Search API
+                acli_args = [
+                    'acli',
+                    'confluence',
+                    'search',
+                    '--site', domain,
+                    '--cql', params.get('cql', self.query),
+                    '--limit', str(params.get('limit', self.batch_size)),
+                    '--start', str(params.get('start', 0)),
+                    '--output', 'json'
+                ]
+                
+                if 'expand' in params:
+                    acli_args.extend(['--expand', params['expand']])
+                
+                if 'cursor' in params and params['cursor']:
+                    acli_args.extend(['--cursor', params['cursor']])
+                    
+            elif '/wiki/rest/api/content/' in url and '/child/comment' in url:
+                # Comments API
+                content_id = url.split('/wiki/rest/api/content/')[1].split('/child/comment')[0]
+                acli_args = [
+                    'acli',
+                    'confluence',
+                    'content',
+                    'comments',
+                    '--site', domain,
+                    '--content-id', content_id,
+                    '--limit', str(params.get('limit', self.batch_size)),
+                    '--start', str(params.get('start', 0)),
+                    '--output', 'json'
+                ]
+                
+                if 'expand' in params:
+                    acli_args.extend(['--expand', params['expand']])
+                
+                if 'depth' in params:
+                    acli_args.extend(['--depth', params['depth']])
+            else:
+                # Generic content API - try to use acli confluence content
+                # Fallback to a more generic approach
+                raise ValueError(f"Unsupported URL pattern for acli: {url}")
+            
+            try:
+                result = subprocess.run(
+                    acli_args,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                
+                response_data = json.loads(result.stdout)
+                return response_data
+                
+            except subprocess.CalledProcessError as e:
+                error_details = {
+                    "returncode": e.returncode,
+                    "stdout": e.stdout,
+                    "stderr": e.stderr,
+                    "command": ' '.join(acli_args)
+                }
+                logging.error(f"Confluence Cloud API error via acli: {error_details}")
+                raise Exception(f"acli command failed: {e.stderr}")
+            except json.JSONDecodeError as e:
+                error_details = {
+                    "stdout": result.stdout if 'result' in locals() else None,
+                    "json_error": str(e)
+                }
+                logging.error(f"Failed to parse acli JSON response: {error_details}")
+                raise Exception(f"Failed to parse acli response: {e}")
 
         return execute_with_retry(do_request, f"Requesting items with params: {params}", self.number_of_retries, self.retry_delay)
     
